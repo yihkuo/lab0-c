@@ -220,7 +220,7 @@ int merge(struct list_head *l, struct list_head *r, bool descend)
     while (!list_empty(l) && !list_empty(r)) {
         element_t *node_l = list_first_entry(l, element_t, list);
         element_t *node_r = list_first_entry(r, element_t, list);
-        if ((strcmp(node_l->value, node_r->value) <= 0) ^ descend) {
+        if ((strcmp(node_l->value, node_r->value) < 0) ^ descend) {
             list_move_tail(&node_l->list, &temp);
         } else {
             list_move_tail(&node_r->list, &temp);
@@ -245,7 +245,7 @@ void q_sort(struct list_head *head, bool descend)
     } while (left != right && left->next != right);
     mid = left;
     LIST_HEAD(second);
-    list_cut_position(&second, mid, head->prev);
+    list_cut_position(&second, head, mid);
 
     q_sort(head, descend);
     q_sort(&second, descend);
@@ -304,17 +304,12 @@ int q_merge(struct list_head *head, bool descend)
     // https://leetcode.com/problems/merge-k-sorted-lists/
     if (!head || list_empty(head))
         return 0;
-    if (list_is_singular(head))
-        return q_size(list_first_entry(head, queue_contex_t, chain)->q);
-    int queue_size = 0;
-    queue_contex_t *first, *second;
-    first = list_first_entry(head, queue_contex_t, chain),
-    second = list_entry(first->chain.next, queue_contex_t, chain);
-    while (second->q) {
-        queue_size = merge(first->q, second->q, descend);
-        second->q = NULL;
-        list_move_tail(&second->chain, head);
-        second = list_entry(first->chain.next, queue_contex_t, chain);
+    queue_contex_t *fir = list_first_entry(head, queue_contex_t, chain);
+    struct list_head *cur = head->next->next;
+    while (cur != head) {
+        queue_contex_t *node = list_entry(cur, queue_contex_t, chain);
+        merge(fir->q, node->q, descend);
+        cur = cur->next;
     }
-    return queue_size;
+    return q_size(fir->q);
 }
